@@ -137,7 +137,7 @@ def train_skip_gram(V, data_folder, data_folders, dataset_size, reverse_dictiona
 
     ####################################################################################################################
     # Set up for analogies
-    analogies, analogy_types, n_questions_total, n_questions_relevant = i2v_eval.load_analogies(data_folder)
+    #analogies, analogy_types, n_questions_total, n_questions_relevant = i2v_eval.load_analogies(data_folder)
     folder_evaluation = embeddings_pickle.replace('.p', '') + 'eval'
     if not os.path.exists(folder_evaluation):
         os.makedirs(folder_evaluation)
@@ -234,7 +234,7 @@ def train_skip_gram(V, data_folder, data_folders, dataset_size, reverse_dictiona
             global_train_step = tf.Variable(0, trainable=False, dtype=tf.int32, name="global_step")
             # Passing global_step to minimize() will increment it at each step.
             optimizer = (
-                tf.train.MomentumOptimizer(learning_rate, 0.9).minimize(loss, global_step=global_train_step)
+                tf.train.MomentumOptimizer(learning_rate, 0.95).minimize(loss, global_step=global_train_step)
             )
         else:
             raise ValueError('Unrecognized optimizer ' + FLAGS.optimizer)
@@ -348,13 +348,13 @@ def train_skip_gram(V, data_folder, data_folders, dataset_size, reverse_dictiona
 
                         if step > 0:
                             avg_loss /= step_print_loss
-
+                        '''
                         analogy_score = i2v_eval.evaluate_analogies(W_in.eval(), reverse_dictionary, analogies,
                                                                     analogy_types, analogy_evaluation_file,
                                                                     session=sess, print=i2v_eval.nop)
                         total_analogy_score = sum([a[0] for a in analogy_score])
                         analogy_score_tensor.assign(total_analogy_score).eval()  # for tf.summary
-
+                        '''
                         [summary, W_in_val] = sess.run([summary_op, W_in])
 
                         if FLAGS.savebest is not None:
@@ -365,8 +365,12 @@ def train_skip_gram(V, data_folder, data_folders, dataset_size, reverse_dictiona
                                                       str(total_analogy_score) + '-w.p')
 
                         # Display average loss
+                        '''
                         print('{} Avg. loss at epoch {:>6,d}, step {:>12,d} of {:>12,d}, global step {:>15} : {:>12.3f}, analogies: {})'.format(
                             str(datetime.now()), epoch, step, num_steps, global_step, avg_loss, str(analogy_score)))
+                        '''
+                        print('{} Avg. loss at epoch {:>6,d}, step {:>12,d} of {:>12,d}, global step {:>15} : {:>12.3f})'.format(
+                            str(datetime.now()), epoch, step, num_steps, global_step, avg_loss))
                         avg_loss = 0
 
                         # Pickle intermediate embeddings

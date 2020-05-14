@@ -753,7 +753,7 @@ def evaluate_embeddings(data_folder, embeddings, embeddings_file):
 
     ####################################################################################################################
     # Analogies
-    analogies(eval_folder, embeddings, embeddings_file, dictionary, reverse_dictionary)
+    #analogies(eval_folder, embeddings, embeddings_file, dictionary, reverse_dictionary)
 
     ####################################################################################################################
     # Semantic tests

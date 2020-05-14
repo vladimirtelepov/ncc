@@ -197,7 +197,10 @@ def print_vocabulary_metadata(reverse_dictionary, source_data_freq, filename):
                     t3 = fam[3]
                     break
             else:
-                assert False, "No OLD tag found for stmt " + word
+                t1 = "unknown token"
+                t2 = "unknown token"
+                t3 = '!UNK'
+                #assert False, "No OLD tag found for stmt " + word
 
             # Find tags corresponding to this word in llvm_IR_stmt_tags
             for t in rgx.llvm_IR_stmt_tags:
@@ -206,7 +209,9 @@ def print_vocabulary_metadata(reverse_dictionary, source_data_freq, filename):
                     tnB = t[2]
                     break
             else:
-                assert False, "No NEW tag found for stmt \"" + word + "\""
+                tnA = 'blob'
+                tnB = 'blob'
+                #assert False, "No NEW tag found for stmt \"" + word + "\""
 
             # Write the line containing all information pertaining to this word
             if '\n' in word:

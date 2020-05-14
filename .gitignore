@@ -14,3 +14,6 @@ task/classifyapp/*/
 task/classifyapp/classifyapp_data.zip
 task/devmap/*
 task/threadcoarsening/*
+musllvm/*
+inference/*
+tmp/*

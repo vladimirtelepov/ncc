@@ -1,0 +1,10 @@
+# download latest python2.7 https://www.python.org/downloads/release/python-2717/
+1) install wine
+2) install ida7.2.exe via wine
+3) install python2.7
+	$> wine msiexec /i python-2.7.17.msi
+4) download https://bootstrap.pypa.io/get-pip.py and run commands below in cmd.exe in wine
+	$> python get-pip.py
+	$> pip install google protobuf
+6) move .py packages from /usr/local/lib/python2.7/dist-packages/mcsema_disass-2.0-py2.7.egg/mcsema_disass/ida7
+	to path-to-wineprefix/drive_c/Python27/Lib

@@ -1,48 +1,17 @@
-# Neural Code Comprehension: A Learnable Representation of Code Semantics
+# Based on https://github.com/spcl/ncc
 
-```ncc``` (Neural Code Comprehension) is a general Machine Learning technique to learn semantics from raw code in virtually any programming language. It relies on ```inst2vec```, an embedding space and graph representation of LLVM IR statements and their context. 
+```ncc``` (Neural Code Comprehension) is a general Machine Learning technique to learn semantics from raw code in virtually any programming language. It relies on ```inst2vec```, an embedding space and graph representation of LLVM IR statements and their context.
 
-![ncc_scheme](figures/overview.png)
-
-This repository contains the code used in [[paper](http://arxiv.org/abs/1806.07336)]:
-> Neural Code Comprehension: A Learnable Representation of Code Semantics, Tal Ben-Nun, Alice Shoshana Jakobovits, Torsten Hoefler
-
-Please cite as:
-```bibtex
-@incollection{ncc,
-title = {Neural Code Comprehension: A Learnable Representation of Code Semantics},
-author = {Ben-Nun, Tal and Jakobovits, Alice Shoshana and Hoefler, Torsten},
-booktitle = {Advances in Neural Information Processing Systems 31},
-editor = {S. Bengio and H. Wallach and H. Larochelle and K. Grauman and N. Cesa-Bianchi and R. Garnett},
-pages = {3588--3600},
-year = {2018},
-publisher = {Curran Associates, Inc.},
-url = {http://papers.nips.cc/paper/7617-neural-code-comprehension-a-learnable-representation-of-code-semantics.pdf}
-}
-```
-
-## Code
+![ncc_scheme](figures/scheme_vert.png)
 
 ### Requirements
-
-For training ```inst2vec``` embeddings:
 * GNU / Linux or Mac OS
 * Python (3.6.5)
-  * tensorflow (1.7.0) or preferably: tensorflow-gpu (1.7.0)
-  * networkx (2.1)
-  * scipy (1.1.0)
-  * absl-py (0.2.2)
-  * jinja2 (2.10)
-  * bokeh (0.12.16)
-  * umap (0.1.1)
-  * sklearn (0.0)
-  * wget (3.2)
-
-Additionally, for training ```ncc``` models:
-* GNU / Linux or Mac OS
-* Python (3.6.5)
-  * labm8 (0.1.2)
-  * keras (2.2.0) 
+* Packages from requirements.txt
+* wine
+* ida7.2 (installed in wine and configured using manual from scripts/ida_setup.txt)
+* mcsema
+* llvm-dis
 
 ### Running the code
 
@@ -69,8 +38,6 @@ $ python train_inst2vec.py \
 
 #### 3. Training on tasks with ```ncc``` 
 
-We provide the code for training three downstream tasks using the same neural architecture (```ncc```) and ```inst2vec``` embeddings.
-
 **Algorithm classification**
 
 Task: Classify applications into 104 classes given their raw code.  
@@ -79,42 +46,93 @@ Code and classes provided by https://sites.google.com/site/treebasedcnn/ (see [C
 Train:
 ```shell
 $ python train_task_classifyapp.py --helpfull # to see the full list of options
-$ python train_task_classifyapp.py
+$ python train_task_classifyapp.py --input_data task/classifyapp --out task/classifyapp \
+                                  --maxlen 0 --model_name NCC_classifyapp --inference=False
 ```
 
-Alternatively, display results from a [pre-trained model](published_results).
+#### 4. Run binary in ida with predicted classes near functions
 
-**Optimal device mapping prediction**
+Works only on linux(x64), don't move this script to directory where exist not empty subdirectory with name tmp. Before run replace path below in file script.sh:
+  ida_path - path to ida64.exe
+  llvm-dis - path to llvm-dis
+  mcsema-lift - path to mcsema-lift
+  app - path to folder with train_task_classifyapp.py
 
-Task: Predict the best-performing compute device (e.g., CPU, GPU)
-Code and classes provided by https://github.com/ChrisCummins/paper-end2end-dl (see [End-to-end Deep Learning of Optimization Heuristics](https://hgpu.org/?p=17573))
+Run:
+```shell
+$ ./script.sh path-to-elf
+```
+
+#### 5. Generate dataset of lifted binaries based on POJ-104
+
+#### 5.1 Compile sources and lift them to llvm_ir
+
+Works only on linux(x64).
+Download dataset from https://sites.google.com/site/treebasedcnn/, unpack it.
+
+Replace parameters values and run:
+```shell
+$ python3 scripts/compile_data.py --ir_per_file count_of_files --num_samples count_of_samples \
+                      --num_threads 8 --dataset_path path_to_dataset --ida_path path_to_ida \
+                      --llvm_dis path_to_llvm_dis --mcsema_lift path_to_mcsema_lift
+```
+Where
+count_of_files - Number of .ll files generated per input with random choice of optimization level
+count_of_samples - Number samples choicen from source per class
+
+#### 5.2 Split lifted dataset to train, test, validation
+
+Splitted dataset appears in current directory. If you want change sizes of partitions, replace parts var initialisation in scripts/split_data.py by your values.
+
+Run:
+```shell
+$ python3 scripts/split_data.py --path path_to_lifted_dataset
+```
+
+#### 5.3 Get function names declared in sources
+
+Replace parameters values and run:
+```shell
+$ python3 scripts/get_function_from_cpp.py --lib_path path_to_clang_library \
+                      --path_in path_to_dataset --path_out path_to_place_names
+```
+
+#### 5.4 Delete functions that appeared during compilation in sources
+
+Replace parameters values and run:
+```shell
+$ python3 scripts/del_functions.py --path_funcs path_from_previous_step --num_threads 8 \
+                      --path_llvm path_to_lifted_and_splited_dataset
+```
+
+#### 6. Train and evaluate on lifted binaries
+
+Firstly complete previous step. Put obtained dataset (folders ir_train, ir_val, ir_test) to task/task_classifyapp_lifted.
 
 Train:
 ```shell
-$ python train_task_devmap.py --helpfull # to see the full list of options
-$ python train_task_devmap.py
+$ python train_task_classifyapp.py --input_data task/classifyapp_lifted \
+                      --out task/classifyapp_lifted --maxlen 1100 \
+                      --model_name NCC_classifyapp_lifted --inference=False
 ```
+Where
+maxlen - max legth of preproccesed sequence in dataset. More then 90% of sequences have length less or equal then 1100. If 0 specified then it computed dynamically, but its high memory and computationally consuming.
 
-Alternatively, display results from a [pre-trained model](published_results).
-
-**Optimal thread coarsening factor prediction**
-
-Code and classes provided by https://github.com/ChrisCummins/paper-end2end-dl (see [End-to-end Deep Learning of Optimization Heuristics](https://hgpu.org/?p=17573))
-
-Train:
+Test obtained model:
 ```shell
-$ python train_task_threadcoarsening.py --helpfull # to see the full list of options
-$ python train_task_threadcoarsening.py
+$ python train_task_classifyapp.py --input_data task/classifyapp_lifted \
+                      --out task/classifyapp_lifted --maxlen 1100 \
+                      --model_name NCC_classifyapp_lifted --inference=True
 ```
 
-Alternatively, display results from a [pre-trained model](published_results).
-
-## Contact
-
-We would be thrilled if you used and built upon this work.
-Contributions, comments, and issues are welcome!
+To use obtained model to predict labels for .ll files, put them to inference/ir_test folder and run:
+```shell
+$ python train_task_classifyapp.py --input_data task/classifyapp_lifted \
+                      --out task/classifyapp_lifted --maxlen 1100 \
+                      --model_name NCC_classifyapp_lifted --inference=True --input_file name
+```
+Result is file in json fromat will be located in folder inference with specified name.
 
 ## License
 
 NCC is published under the New BSD license, see [LICENSE](LICENSE).
-

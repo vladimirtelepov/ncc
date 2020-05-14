@@ -1484,7 +1484,6 @@ def add_stmts_to_graph(G, file, functions_defined_in_file, functions_declared_in
             ############################################################################################################
             # (indirect) branch
             elif re.match('(indirect)?br ', line):
-
                 # Unconditional branch
                 if re.match('br label ', line):
 

@@ -29,16 +29,16 @@ flags.DEFINE_string('data_folder', '', 'Dataset folder prefix')
 
 # Vocabulary parameters
 flags.DEFINE_integer('context_width', 2, 'width of skip-gram context')
-flags.DEFINE_integer('cutoff_unknown', 300,
+flags.DEFINE_integer('cutoff_unknown', 15,
                      'replace stmts which appear less than "cutoff" times by "unknown token')
 flags.DEFINE_float('subsampling', 1e-7, 'frequent pairs subsampling')
 
 # Parameters of inst2vec (default)
-flags.DEFINE_integer('embedding_size', 200, 'Dimension of embedding space')
-flags.DEFINE_integer('mini_batch_size', 64, 'size of mini-batches of data to feed the neural network')
-flags.DEFINE_integer('num_sampled', 60, 'number of negative classes to sample/batch for NCE')
-flags.DEFINE_integer('num_epochs', 5, 'number of training epochs')
-flags.DEFINE_float('learning_rate', 0.001, "learning rate used by Adam's optimizer")
+flags.DEFINE_integer('embedding_size', 64, 'Dimension of embedding space')
+flags.DEFINE_integer('mini_batch_size', 256, 'size of mini-batches of data to feed the neural network')
+flags.DEFINE_integer('num_sampled', 32, 'number of negative classes to sample/batch for NCE')
+flags.DEFINE_integer('num_epochs', 30, 'number of training epochs')
+flags.DEFINE_float('learning_rate', 0.002, "learning rate used by Adam's optimizer")
 flags.DEFINE_float('beta', 0.0, 'scale of L2 regularization applied to weights (0: no regularization)')
 
 # Embedding training parameters

@@ -54,9 +54,12 @@ def any_of(possibilities, to_add=''):
 # Regex manipulation: helper variables
 ########################################################################################################################
 # Identifiers
-global_id = r'(?<!%")@["\w\d\.\-\_\$\\]+'
-local_id_no_perc = '[\"\@\d\w\.\-\_\:]+'
-local_id = '%' + local_id_no_perc
+#global_id = r'(?<!%")@["\w\d\.\-\_\$\\]+'
+global_id = r'(?<!%")@["\w\d\.\-\_\$\\?@]+'
+#local_id_no_perc = '[\"\@\d\w\.\-\_\:]+'
+local_id_no_perc = r'["\w\d\.\-\_\$\:\\?@]+'
+#local_id = '%' + local_id_no_perc
+local_id = r'%["\w\d\.\-\_\:\\?@]+'
 local_or_global_id = r'(' + global_id + r'|' + local_id + r')'
 
 # Options and linkages
