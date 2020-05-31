@@ -7,7 +7,7 @@
 ida_path="/home/vladimir/.wine/drive_c/Program Files/IDA 7.2/idat64.exe"
 llvm_dis="llvm-dis-6.0"
 mcsema_lift="mcsema-lift-4.0"
-app="/home/vladimir/programming/course-work"
+app="/home/vladimir/programming/ncc"
 
 cfg_out="$1.cfg"
 cfg_log="$1.log"

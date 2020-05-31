@@ -76,6 +76,7 @@ $ python3 scripts/compile_data.py --ir_per_file count_of_files --num_samples cou
                       --num_threads 8 --dataset_path path_to_dataset --ida_path path_to_ida \
                       --llvm_dis path_to_llvm_dis --mcsema_lift path_to_mcsema_lift
 ```
+
 Where
 count_of_files - Number of .ll files generated per input with random choice of optimization level
 count_of_samples - Number samples choicen from source per class
@@ -115,6 +116,7 @@ $ python train_task_classifyapp.py --input_data task/classifyapp_lifted \
                       --out task/classifyapp_lifted --maxlen 1100 \
                       --model_name NCC_classifyapp_lifted --inference=False
 ```
+
 Where
 maxlen - max legth of preproccesed sequence in dataset. More then 90% of sequences have length less or equal then 1100. If 0 specified then it computed dynamically, but its high memory and computationally consuming.
 

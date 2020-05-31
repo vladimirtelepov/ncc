@@ -11,6 +11,7 @@ published_results/devmap
 published_results/threadcoarsening
 published_results/vocabulary
 task/classifyapp/*/
+task/classifyapp_lifted/*/
 task/classifyapp/classifyapp_data.zip
 task/devmap/*
 task/threadcoarsening/*
