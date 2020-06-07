@@ -34,8 +34,7 @@ import math
 import struct
 from keras import utils
 from keras.callbacks import Callback
-from absl import app
-from absl import flags
+from absl import app, flags
 
 # Parameters of classifyapp
 flags.DEFINE_string('input_data', 'task/classifyapp_lifted', 'Path to input data')
@@ -44,7 +43,7 @@ flags.DEFINE_integer('num_epochs', 50, 'number of training epochs')
 flags.DEFINE_integer('batch_size', 32, 'training batch size')
 flags.DEFINE_integer('dense_layer', 32, 'dense layer size')
 flags.DEFINE_integer('train_samples', 398, 'Number of training samples per class')
-flags.DEFINE_integer('maxlen', 3000, 'max length of sequences, all sequences padded or cuted \
+flags.DEFINE_integer('maxlen', 1100, 'max length of sequences, all sequences padded or cuted \
 	to this number, if 0 specified, then compute it dynamically')
 flags.DEFINE_string('model_name', "NCC_classifyapp_lifted", 'name of model to train or use for predictions')
 flags.DEFINE_integer('vsamples', 0, 'Sampling on validation set')
@@ -53,6 +52,7 @@ flags.DEFINE_integer('ring_size', 5, 'Checkpoint ring buffer length')
 flags.DEFINE_bool('print_summary', False, 'Print summary of Keras model')
 flags.DEFINE_bool('inference', True, 'Train or inference mod')
 flags.DEFINE_string('input_file', '', 'file for predict it functions')
+flags.DEFINE_integer('topk', 3, 'how match labels to see per sample for computing accuracy')
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
 
@@ -397,13 +397,13 @@ def evaluate(model, embeddings, folder_data, samples_per_class, folder_results, 
 	model_path = os.path.join(folder_results,
 							  "models/{}.model".format(model_name))
 	predictions_path = os.path.join(folder_results,
-									"predictions/{}.result".format(model_name))
+									"predictions/{}_top{}.result".format(model_name, FLAGS.topk))
 
 	# If predictions have already been made with these embeddings, load them
 	if fs.exists(predictions_path):
 		print("\tFound predictions in", predictions_path, ", skipping...")
 		with open(predictions_path, 'rb') as infile:
-			p = pickle.load(infile)
+			ind = pickle.load(infile)
 
 	else:  # could not find predictions already computed with these embeddings
 
@@ -450,7 +450,8 @@ def evaluate(model, embeddings, folder_data, samples_per_class, folder_results, 
 
 		# Test model
 		print('\n--- Testing model...')
-		p = model.predict(X_seq_test, batch_size)
+		ind, prob = model.predict_topk(X_seq_test, batch_size, FLAGS.topk)
+		del prob
 
 		# cache the prediction
 		fs.mkdir(fs.dirname(predictions_path))
@@ -460,7 +461,11 @@ def evaluate(model, embeddings, folder_data, samples_per_class, folder_results, 
 
 	####################################################################################################################
 	# Return accuracy
-	accuracy = p == y_test  # prediction accuracy
+	accuracy = np.zeros_like(y_test)
+	ind = np.transpose(np.array(ind))
+	for i in range(FLAGS.topk):
+		accuracy += np.array(ind[i]) == y_test
+	print('\nTest top{} accuracy:'.format(FLAGS.topk), sum(accuracy)*100.0/len(accuracy), '%')
 	return accuracy
 
 def predict_labels():
@@ -504,7 +509,7 @@ def predict_labels():
 	)
 	model.model.summary()
 	model.load_weights(os.path.join(FLAGS.out, model.__name__ + '_weights.h5'))
-	indices, probabilities = model.predict_topk(X_seq_test, batch_size, k=10)
+	indices, probabilities = model.predict_topk(X_seq_test, batch_size, FLAGS.topk)
 
 	import json
 
@@ -561,12 +566,12 @@ def test_accuracy(model, embeddings, folder_data, samples_per_class, folder_resu
 	model_path = os.path.join(folder_results,
 							  "models/{}.model".format(model_name))
 	predictions_path = os.path.join(folder_results,
-									"predictions/{}.result".format(model_name))
+									"predictions/{}_top{}.result".format(model_name, FLAGS.topk))
 
 	if fs.exists(predictions_path):
 		print("\tFound predictions in", predictions_path, ", skipping...")
 		with open(predictions_path, 'rb') as infile:
-			p = pickle.load(infile)
+			ind = pickle.load(infile)
 
 	else:
 		import tensorflow as tf
@@ -586,15 +591,33 @@ def test_accuracy(model, embeddings, folder_data, samples_per_class, folder_resu
 			model.model.summary()
 		
 		print('\n--- Testing model...')
-		p = model.predict(X_seq_test, batch_size)
+		ind, prob = model.predict_topk(X_seq_test, batch_size, FLAGS.topk)
+		del prob
 		fs.mkdir(fs.dirname(predictions_path))
 		with open(predictions_path, 'wb') as outfile:
-			pickle.dump(p, outfile)
+			pickle.dump(ind, outfile)
 		print('\tsaved predictions to', predictions_path)
 
-	accuracy = np.array(p) == y_test
-	print('\nTest accuracy:', sum(accuracy)*100.0/len(accuracy), '%')
+	accuracy = np.zeros_like(y_test)
+	ind = np.transpose(np.array(ind))
+	for i in range(FLAGS.topk):
+		accuracy += np.array(ind[i]) == y_test
+	print('\nTest top{} accuracy:'.format(FLAGS.topk), sum(accuracy)*100.0/len(accuracy), '%')
 
+	from sklearn.metrics import confusion_matrix
+	conf_matr = confusion_matrix(y_test, ind[0])
+
+	import matplotlib.pyplot as plt
+	fig, ax = plt.subplots()
+	values = plt.imshow(conf_matr)
+	ax.xaxis.tick_top()
+	ax.xaxis.set_label_position('top')
+	
+	fig.colorbar(values)
+	ax.set_xlabel('Настоящие классы')
+	ax.set_ylabel('Предсказанные классы')
+	conf_png = os.path.join(folder_results, "models/conf_matr_{}.png".format(model_name))
+	plt.savefig(conf_png)
 
 ########################################################################################################################
 # Main
